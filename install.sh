@@ -781,9 +781,9 @@ else
     REPO_DIR=$(mktemp -d)
     trap "rm -rf $REPO_DIR" EXIT
     if command -v git &>/dev/null; then
-        git clone --depth 1 https://github.com/turalaliyev/paperless-overconfigured.git "$REPO_DIR" 2>/dev/null
+        git clone --depth 1 https://github.com/tural-ali/paperless-overconfigured.git "$REPO_DIR" 2>/dev/null
     else
-        curl -fsSL https://github.com/turalaliyev/paperless-overconfigured/archive/main.tar.gz | tar xz -C "$REPO_DIR" --strip-components=1
+        curl -fsSL https://github.com/tural-ali/paperless-overconfigured/archive/main.tar.gz | tar xz -C "$REPO_DIR" --strip-components=1
     fi
     success "Files downloaded"
 fi
