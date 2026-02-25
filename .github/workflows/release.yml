@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    # Only release if CI passes
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: $TAG"
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          LATEST="${{ steps.latest_tag.outputs.tag }}"
+          # Strip 'v' prefix
+          VERSION="${LATEST#v}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+          # Check commit messages since last tag for bump type
+          COMMITS=$(git log "${LATEST}..HEAD" --oneline 2>/dev/null || git log --oneline)
+
+          if echo "$COMMITS" | grep -qiE '(BREAKING CHANGE|^feat!|^fix!)'; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            TYPE="major"
+          elif echo "$COMMITS" | grep -qiE '^feat'; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            TYPE="minor"
+          else
+            PATCH=$((PATCH + 1))
+            TYPE="patch"
+          fi
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+          echo "Bump: $TYPE ($LATEST -> $NEW_TAG)"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.bump.outputs.new_tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release notes
+        if: steps.check_tag.outputs.exists == 'false'
+        id: notes
+        run: |
+          LATEST="${{ steps.latest_tag.outputs.tag }}"
+          {
+            echo "notes<<EOF"
+            echo "## Changes since ${LATEST}"
+            echo ""
+            git log "${LATEST}..HEAD" --pretty=format:"- %s" 2>/dev/null || git log --pretty=format:"- %s" -10
+            echo ""
+            echo ""
+            echo "**Full changelog**: https://github.com/${{ github.repository }}/compare/${LATEST}...${{ steps.bump.outputs.new_tag }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          gh release create "${{ steps.bump.outputs.new_tag }}" \
+            --title "${{ steps.bump.outputs.new_tag }}" \
+            --notes "${{ steps.notes.outputs.notes }}" \
+            --target main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

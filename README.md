@@ -1,8 +1,8 @@
 # Paperless Overconfigured
 
-[![CI](https://github.com/tural-ali/paperless-overconfigured/actions/workflows/ci.yml/badge.svg)](https://github.com/tural-ali/paperless-overconfigured/actions/workflows/ci.yml)
+[![CI](https://github.com/tural-ali/paperless-overconfigured/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tural-ali/paperless-overconfigured/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/tural-ali/paperless-overconfigured)](https://github.com/tural-ali/paperless-overconfigured/releases)
+[![GitHub release](https://img.shields.io/github/v/release/tural-ali/paperless-overconfigured?cache_seconds=60)](https://github.com/tural-ali/paperless-overconfigured/releases)
 
 > A production-ready, AI-powered document management stack. One command. A few questions. Stack running.
 
