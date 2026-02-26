@@ -1241,6 +1241,22 @@ if [ "$ENABLE_GRAPH" = "true" ]; then
 fi
 
 # ══════════════════════════════════════════════════════════════
+# PHASE 8c: SET UP DOCKER AUTO-UPDATE CRON
+# ══════════════════════════════════════════════════════════════
+
+step "Setting up Docker auto-update schedule..."
+UPDATE_SCRIPT="$INSTALL_DIR/scripts/docker-update.sh"
+chmod +x "$UPDATE_SCRIPT"
+UPDATE_CRON="0 4 * * * $UPDATE_SCRIPT >> $INSTALL_DIR/docker-update.log 2>&1"
+
+if crontab -l 2>/dev/null | grep -qF "docker-update.sh"; then
+    success "Docker auto-update cron already exists"
+else
+    (crontab -l 2>/dev/null; echo "$UPDATE_CRON") | crontab -
+    success "Docker auto-update scheduled: daily at 4:00 AM"
+fi
+
+# ══════════════════════════════════════════════════════════════
 # PHASE 9: START THE STACK
 # ══════════════════════════════════════════════════════════════
 
@@ -1331,6 +1347,7 @@ echo "    Data:       $INSTALL_DIR/media/"
 echo "    Import:     $INSTALL_DIR/consume/"
 echo "    Backup:     $INSTALL_DIR/backup.sh"
 echo "    Restore:    $INSTALL_DIR/restore.sh"
+echo "    Updater:    $INSTALL_DIR/scripts/docker-update.sh"
 echo ""
 
 if [ "$LLM_PROVIDER" != "none" ] && [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then

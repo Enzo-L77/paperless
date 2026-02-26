@@ -133,6 +133,13 @@ case "$choice" in
             success "Neo4j sync cron removed"
         fi
 
+        # Remove docker auto-update cron
+        if crontab -l 2>/dev/null | grep -qF "docker-update.sh"; then
+            info "Removing Docker auto-update cron job..."
+            crontab -l 2>/dev/null | grep -vF "docker-update.sh" | crontab - 2>/dev/null || true
+            success "Docker auto-update cron removed"
+        fi
+
         # Remove Docker images (optional)
         echo ""
         echo -ne "${BOLD}Also remove downloaded Docker images? (y/N): ${NC}"
