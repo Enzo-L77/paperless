@@ -159,6 +159,7 @@ graph TB
     end
 
     TS --> P
+    TS --> GPT
     CF --> P
     P --> DB
     P --> Redis
@@ -325,6 +326,7 @@ Manual sync: `python3 ~/paperless/scripts/neo4j-sync.py`
 | tika | 9998 | 512 MB | Text extraction |
 | neo4j | 7474, 7687 | 1 GB | Graph database (optional) |
 | cloudflared | — | 128 MB | Cloudflare Tunnel (optional) |
+| tailscale | 443, 8443 | 128 MB | Tailscale VPN (optional) — serves Paperless on :443, paperless-gpt on :8443 |
 
 **Minimum requirements:** 4 GB RAM (8 GB recommended), 2 CPU cores, 20 GB disk
 

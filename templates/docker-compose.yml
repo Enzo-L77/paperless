@@ -282,7 +282,7 @@ services:
       TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-paperless}
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: "true"
-      TS_SERVE_CONFIG: /config/tailscale-serve.json
+      TS_SERVE_CONFIG: /config/tailscale-serve.yml
     restart: unless-stopped
     volumes:
       - ${INSTALL_DIR}/tailscale:/var/lib/tailscale

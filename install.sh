@@ -434,7 +434,7 @@ ENABLE_BACKUPS="false"
 ENCRYPTION_PASSPHRASE=""
 HEALTHCHECK_URL=""
 RCLONE_REMOTE=""
-RCLONE_BACKUP_DIR="Backups/Paperless"
+RCLONE_BACKUP_DIR="Paperless/Backup"
 GITHUB_BACKUP_REPO=""
 RCLONE_PROVIDER=""
 
@@ -855,8 +855,8 @@ fi
 
 # ── Copy Tailscale serve config ────────────────────────────────
 if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
-    if [ -f "$REPO_DIR/templates/tailscale-serve.json" ]; then
-        cp "$REPO_DIR/templates/tailscale-serve.json" "$INSTALL_DIR/tailscale-config/"
+    if [ -f "$REPO_DIR/templates/tailscale-serve.yml" ]; then
+        cp "$REPO_DIR/templates/tailscale-serve.yml" "$INSTALL_DIR/tailscale-config/"
         success "Tailscale serve config deployed"
     fi
 fi
@@ -1311,7 +1311,11 @@ case "$ACCESS_METHOD" in
 esac
 
 if [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then
-    echo "    paperless-gpt: http://localhost:8080"
+    if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]] && [ -n "$TAILSCALE_HOSTNAME" ]; then
+        echo "    paperless-gpt: https://$TAILSCALE_HOSTNAME:8443 (via Tailscale serve)"
+    else
+        echo "    paperless-gpt: http://localhost:8080"
+    fi
 fi
 
 if [[ "$COMPOSE_PROFILES" == *"graph"* ]]; then
