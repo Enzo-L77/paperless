@@ -203,6 +203,7 @@ prompt "Enter choice [1-5]: "
 read -r ACCESS_CHOICE
 
 TAILSCALE_HOSTNAME=""
+TAILSCALE_AUTHKEY=""
 PAPERLESS_DOMAIN=""
 CLOUDFLARE_TUNNEL_TOKEN=""
 COMPOSE_PROFILES=""
@@ -210,18 +211,12 @@ COMPOSE_PROFILES=""
 case "$ACCESS_CHOICE" in
     1)
         ACCESS_METHOD="tailscale"
-        info "Checking Tailscale..."
-        if command -v tailscale &>/dev/null; then
-            TS_STATUS=$(tailscale status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('Self',{}).get('DNSName','').rstrip('.'))" 2>/dev/null || true)
-            if [ -n "$TS_STATUS" ]; then
-                success "Tailscale detected: $TS_STATUS"
-                TAILSCALE_HOSTNAME="$TS_STATUS"
-            fi
-        fi
-        if [ -z "$TAILSCALE_HOSTNAME" ]; then
-            warn "Tailscale not detected. Install it after setup: https://tailscale.com/download"
-            ask TAILSCALE_HOSTNAME "Tailscale hostname (or press Enter to set later)" ""
-        fi
+        COMPOSE_PROFILES="tailscale"
+        info "Tailscale will run as a Docker container in your stack."
+        echo -e "${DIM}Create a reusable auth key at: https://login.tailscale.com/admin/settings/keys${NC}"
+        ask_secret TAILSCALE_AUTHKEY "Tailscale auth key (tskey-auth-...)"
+        echo ""
+        ask TAILSCALE_HOSTNAME "Tailscale hostname for Paperless" "paperless"
         ;;
     2)
         ACCESS_METHOD="cloudflare"
@@ -232,15 +227,12 @@ case "$ACCESS_CHOICE" in
         ;;
     3)
         ACCESS_METHOD="both"
-        COMPOSE_PROFILES="tunnel"
-        if command -v tailscale &>/dev/null; then
-            TS_STATUS=$(tailscale status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('Self',{}).get('DNSName','').rstrip('.'))" 2>/dev/null || true)
-            if [ -n "$TS_STATUS" ]; then
-                TAILSCALE_HOSTNAME="$TS_STATUS"
-                success "Tailscale detected: $TS_STATUS"
-            fi
-        fi
-        [ -z "$TAILSCALE_HOSTNAME" ] && ask TAILSCALE_HOSTNAME "Tailscale hostname" ""
+        COMPOSE_PROFILES="tunnel,tailscale"
+        info "Tailscale will run as a Docker container in your stack."
+        echo -e "${DIM}Create a reusable auth key at: https://login.tailscale.com/admin/settings/keys${NC}"
+        ask_secret TAILSCALE_AUTHKEY "Tailscale auth key (tskey-auth-...)"
+        echo ""
+        ask TAILSCALE_HOSTNAME "Tailscale hostname for Paperless" "paperless"
         ask PAPERLESS_DOMAIN "Your domain for Paperless (e.g. docs.example.com)" ""
         ask CLOUDFLARE_TUNNEL_TOKEN "Cloudflare Tunnel token" ""
         ;;
@@ -760,6 +752,7 @@ PAPERLESS_ALLOWED_HOSTS=$ALLOWED_HOSTS
 PAPERLESS_CORS_ALLOWED_HOSTS=$CORS_HOSTS
 PAPERLESS_CSRF_TRUSTED_ORIGINS=$CSRF_ORIGINS
 TAILSCALE_HOSTNAME=$TAILSCALE_HOSTNAME
+TAILSCALE_AUTHKEY=$TAILSCALE_AUTHKEY
 PAPERLESS_DOMAIN=$PAPERLESS_DOMAIN
 CLOUDFLARE_TUNNEL_TOKEN=$CLOUDFLARE_TUNNEL_TOKEN
 
@@ -839,6 +832,30 @@ if [ "$ACCESS_METHOD" = "exposed" ]; then
     sed -i.bak 's|127.0.0.1:8000:8000|0.0.0.0:8000:8000|g' "$INSTALL_DIR/docker-compose.yml"
     rm -f "$INSTALL_DIR/docker-compose.yml.bak"
     warn "Paperless port bound to 0.0.0.0:8000 (publicly accessible)"
+fi
+
+# ── Create Tailscale state dir and serve config ───────────────
+if [[ "$COMPOSE_PROFILES" == *"tailscale"* ]]; then
+    mkdir -p "$INSTALL_DIR/tailscale" "$INSTALL_DIR/tailscale-config"
+    cat > "$INSTALL_DIR/tailscale-config/ts-serve.json" << 'TSEOF'
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "${TS_CERT_DOMAIN}:443": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://paperless:8000"
+        }
+      }
+    }
+  }
+}
+TSEOF
+    success "Tailscale serve config written to $INSTALL_DIR/tailscale-config/ts-serve.json"
 fi
 
 # ── Copy prompts ──────────────────────────────────────────────
@@ -1265,13 +1282,13 @@ echo ""
 echo -e "  ${BOLD}Access:${NC}"
 case "$ACCESS_METHOD" in
     tailscale)
-        [ -n "$TAILSCALE_HOSTNAME" ] && echo "    Paperless: https://$TAILSCALE_HOSTNAME:8000"
+        [ -n "$TAILSCALE_HOSTNAME" ] && echo "    Paperless: https://$TAILSCALE_HOSTNAME (via Tailscale Serve on :443)"
         ;;
     cloudflare)
         [ -n "$PAPERLESS_DOMAIN" ] && echo "    Paperless: https://$PAPERLESS_DOMAIN"
         ;;
     both)
-        [ -n "$TAILSCALE_HOSTNAME" ] && echo "    Paperless (Tailscale): https://$TAILSCALE_HOSTNAME:8000"
+        [ -n "$TAILSCALE_HOSTNAME" ] && echo "    Paperless (Tailscale): https://$TAILSCALE_HOSTNAME (via Tailscale Serve on :443)"
         [ -n "$PAPERLESS_DOMAIN" ] && echo "    Paperless (Domain):    https://$PAPERLESS_DOMAIN"
         ;;
     local)

@@ -254,6 +254,35 @@ services:
         limits:
           memory: 1G
 
+  # ── Tailscale VPN (optional, --profile tailscale) ───────
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: paperless-tailscale
+    profiles:
+      - tailscale
+    hostname: ${TAILSCALE_HOSTNAME:-paperless}
+    environment:
+      TS_AUTHKEY: ${TAILSCALE_AUTHKEY}
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-paperless}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/ts-serve.json
+    volumes:
+      - ${INSTALL_DIR}/tailscale:/var/lib/tailscale
+      - ${INSTALL_DIR}/tailscale-config:/config
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - paperless-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
   # ── Cloudflare Tunnel (optional, --profile tunnel) ──────
   cloudflared:
     image: cloudflare/cloudflared:latest
