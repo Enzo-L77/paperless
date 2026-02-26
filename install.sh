@@ -393,7 +393,7 @@ OCR_LANGUAGE="eng"
 OCR_EXTRA_LANGUAGES=""
 
 case "$OCR_CHOICE" in
-    1) OCR_LANGUAGE="eng" ;;
+    1) OCR_LANGUAGE="deu" ;;
     2) OCR_LANGUAGE="deu+eng" ;;
     3) OCR_LANGUAGE="fra+eng" ;;
     4) OCR_LANGUAGE="spa+eng" ;;
