@@ -1311,7 +1311,11 @@ case "$ACCESS_METHOD" in
 esac
 
 if [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then
-    echo "    paperless-gpt: http://localhost:8080"
+    if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]] && [ -n "$TAILSCALE_HOSTNAME" ]; then
+        echo "    paperless-gpt: https://$TAILSCALE_HOSTNAME:8443 (via Tailscale serve)"
+    else
+        echo "    paperless-gpt: http://localhost:8080"
+    fi
 fi
 
 if [[ "$COMPOSE_PROFILES" == *"graph"* ]]; then
