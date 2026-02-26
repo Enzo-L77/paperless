@@ -853,12 +853,60 @@ if [ -d "$REPO_DIR/scripts" ]; then
     chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
 fi
 
-# ── Copy Tailscale serve config ────────────────────────────────
+# ── Generate Tailscale serve config ───────────────────────────
 if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
-    if [ -f "$REPO_DIR/templates/tailscale-serve.json" ]; then
-        cp "$REPO_DIR/templates/tailscale-serve.json" "$INSTALL_DIR/tailscale-config/"
-        success "Tailscale serve config deployed"
+    TS_SERVE_DEST="$INSTALL_DIR/tailscale-config/tailscale-serve.json"
+    if [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then
+        # Include paperless-gpt on port 8080
+        cat > "$TS_SERVE_DEST" << 'TSEOF'
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    },
+    "8080": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "${TS_CERT_DOMAIN}:443": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://paperless:8000"
+        }
+      }
+    },
+    "${TS_CERT_DOMAIN}:8080": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://paperless-gpt:8080"
+        }
+      }
+    }
+  }
+}
+TSEOF
+    else
+        cat > "$TS_SERVE_DEST" << 'TSEOF'
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "${TS_CERT_DOMAIN}:443": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://paperless:8000"
+        }
+      }
+    }
+  }
+}
+TSEOF
     fi
+    success "Tailscale serve config deployed"
 fi
 
 # ── Create google-ai.json placeholder if AI enabled ──────────
@@ -1311,7 +1359,11 @@ case "$ACCESS_METHOD" in
 esac
 
 if [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then
-    echo "    paperless-gpt: http://localhost:8080"
+    if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]] && [ -n "$TAILSCALE_HOSTNAME" ]; then
+        echo "    paperless-gpt: https://$TAILSCALE_HOSTNAME:8080 (via Tailscale serve)"
+    else
+        echo "    paperless-gpt: http://localhost:8080"
+    fi
 fi
 
 if [[ "$COMPOSE_PROFILES" == *"graph"* ]]; then
