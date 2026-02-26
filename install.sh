@@ -855,8 +855,8 @@ fi
 
 # ── Copy Tailscale serve config ────────────────────────────────
 if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
-    if [ -f "$REPO_DIR/templates/tailscale-serve.json" ]; then
-        cp "$REPO_DIR/templates/tailscale-serve.json" "$INSTALL_DIR/tailscale-config/"
+    if [ -f "$REPO_DIR/templates/tailscale-serve.yml" ]; then
+        cp "$REPO_DIR/templates/tailscale-serve.yml" "$INSTALL_DIR/tailscale-config/"
         success "Tailscale serve config deployed"
     fi
 fi
