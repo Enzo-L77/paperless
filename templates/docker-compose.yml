@@ -271,6 +271,29 @@ services:
         limits:
           memory: 128M
 
+  # ── Tailscale (optional, --profile tailscale) ────────────
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: paperless-tailscale
+    profiles:
+      - tailscale
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY}
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-paperless}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/tailscale-serve.json
+    restart: unless-stopped
+    volumes:
+      - ${INSTALL_DIR}/tailscale:/var/lib/tailscale
+      - ${INSTALL_DIR}/tailscale-config:/config
+    networks:
+      - paperless-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 networks:
   paperless-net:
     driver: bridge
