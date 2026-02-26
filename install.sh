@@ -1148,23 +1148,42 @@ if [ "$ENABLE_BACKUPS" = "true" ] && [ -n "$RCLONE_REMOTE" ] && [ "$RCLONE_PROVI
         step "Setting up cloud backup ($RCLONE_REMOTE)..."
         echo ""
         echo -e "${DIM}rclone needs to authenticate with your cloud provider.${NC}"
-        echo -e "${DIM}This will open a browser for OAuth login.${NC}"
+        echo -e "${DIM}Since this server has no browser, use remote authentication:${NC}"
         echo ""
-        prompt "Configure $RCLONE_REMOTE now? (Y/n): "
-        read -r setup_rclone
-        if [[ ! "$setup_rclone" =~ ^[Nn] ]]; then
+
+        case "$RCLONE_PROVIDER" in
+            drive)
+                echo -e "${YELLOW}1. On your LOCAL machine (with browser), run:${NC}"
+                echo -e "${BOLD}     rclone authorize \"drive\" --scope drive${NC}"
+                ;;
+            dropbox)
+                echo -e "${YELLOW}1. On your LOCAL machine (with browser), run:${NC}"
+                echo -e "${BOLD}     rclone authorize \"dropbox\"${NC}"
+                ;;
+            onedrive)
+                echo -e "${YELLOW}1. On your LOCAL machine (with browser), run:${NC}"
+                echo -e "${BOLD}     rclone authorize \"onedrive\"${NC}"
+                ;;
+        esac
+
+        echo -e "${YELLOW}2. Complete the browser OAuth flow.${NC}"
+        echo -e "${YELLOW}3. Copy the token JSON that rclone prints (starting with {\"access_token\":...).${NC}"
+        echo ""
+        prompt "Paste the token here (or press Enter to skip): "
+        read -r rclone_token
+        if [ -n "$rclone_token" ]; then
             case "$RCLONE_PROVIDER" in
                 drive)
-                    echo -e "${DIM}Setting up Google Drive...${NC}"
-                    rclone config create "$RCLONE_REMOTE" drive scope=drive
+                    echo -e "${DIM}Configuring Google Drive with remote auth token...${NC}"
+                    rclone config create "$RCLONE_REMOTE" drive scope=drive token="$rclone_token"
                     ;;
                 dropbox)
-                    echo -e "${DIM}Setting up Dropbox...${NC}"
-                    rclone config create "$RCLONE_REMOTE" dropbox
+                    echo -e "${DIM}Configuring Dropbox with remote auth token...${NC}"
+                    rclone config create "$RCLONE_REMOTE" dropbox token="$rclone_token"
                     ;;
                 onedrive)
-                    echo -e "${DIM}Setting up OneDrive...${NC}"
-                    rclone config create "$RCLONE_REMOTE" onedrive
+                    echo -e "${DIM}Configuring OneDrive with remote auth token...${NC}"
+                    rclone config create "$RCLONE_REMOTE" onedrive token="$rclone_token"
                     ;;
             esac
             success "Cloud backup configured"
