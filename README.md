@@ -11,7 +11,7 @@ Paperless-NGX with batteries included: AI classification, automated backups, ASN
 ## Quick Start
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tural-ali/paperless-overconfigured/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Enzo-L77/paperless/main/install.sh)
 ```
 
 The installer will:
