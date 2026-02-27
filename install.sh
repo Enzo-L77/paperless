@@ -380,7 +380,7 @@ esac
 step "[6/9] OCR Languages"
 echo -e "${DIM}Which languages are your documents in?${NC}"
 echo ""
-echo -e "  ${CYAN}1)${NC} English only"
+echo -e "  ${CYAN}1)${NC} German only"
 echo -e "  ${CYAN}2)${NC} German + English"
 echo -e "  ${CYAN}3)${NC} French + English"
 echo -e "  ${CYAN}4)${NC} Spanish + English"
