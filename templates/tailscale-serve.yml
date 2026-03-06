@@ -8,8 +8,8 @@ Web:
   "${TS_CERT_DOMAIN}:443":
     Handlers:
       "/":
-        Proxy: "http://paperless:8000"
+        Proxy: "http://localhost:8000"
   "${TS_CERT_DOMAIN}:8443":
     Handlers:
       "/":
-        Proxy: "http://paperless-gpt:8080"
+        Proxy: "http://localhost:8080"
