@@ -1325,6 +1325,30 @@ if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
         fi
 
         success "Tailscale konfiguriert"
+
+        # ── SSH auf Tailscale beschränken ──────────────────────
+        if command -v ufw &>/dev/null; then
+            echo ""
+            echo -e "${YELLOW}SSH über Tailscale absichern?${NC}"
+            echo -e "${DIM}Danach ist Port 22 nur noch über das Tailscale-Netzwerk erreichbar.${NC}"
+            echo -e "${DIM}Stelle sicher, dass Tailscale auf all deinen Geräten aktiv ist.${NC}"
+            prompt "SSH auf Tailscale beschränken? (empfohlen) (j/N): "
+            read -r ssh_restrict
+            if [[ "$ssh_restrict" =~ ^[jJyY] ]]; then
+                FIREWALL_SCRIPT="$INSTALL_DIR/scripts/firewall-tailscale-ssh.sh"
+                if [ -f "$FIREWALL_SCRIPT" ]; then
+                    sudo bash "$FIREWALL_SCRIPT" --yes && \
+                        success "SSH ist jetzt nur noch über Tailscale erreichbar." || \
+                        warn "Firewall-Skript fehlgeschlagen. Manuell ausführen: sudo bash $FIREWALL_SCRIPT"
+                else
+                    warn "Skript nicht gefunden: $FIREWALL_SCRIPT"
+                fi
+            else
+                info "SSH-Beschränkung übersprungen. Manuell ausführen: sudo bash $INSTALL_DIR/scripts/firewall-tailscale-ssh.sh"
+            fi
+        else
+            warn "UFW nicht gefunden — SSH-Absicherung übersprungen. Manuell ausführen: sudo bash $INSTALL_DIR/scripts/firewall-tailscale-ssh.sh"
+        fi
     else
         warn "Tailscale nicht gefunden. Nach der Installation manuell ausführen:"
         warn "  sudo tailscale up --authkey=$TS_AUTHKEY --hostname=$TAILSCALE_HOSTNAME"

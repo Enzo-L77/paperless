@@ -24,6 +24,15 @@ info()    { echo -e "${GREEN}[INFO]${NC}  $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 
+# ── Optionen ────────────────────────────────────────────────────────────────
+# -y / --yes  Überspringt die interaktive Sicherheitsabfrage
+AUTO_YES=false
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes) AUTO_YES=true ;;
+    esac
+done
+
 # ── Vorbedingungen prüfen ────────────────────────────────────────────────────
 [ "$EUID" -eq 0 ] || error "Dieses Skript muss als root ausgeführt werden (sudo)."
 
@@ -46,8 +55,10 @@ info "Tailscale-Subnetz:           100.64.0.0/10"
 warn "ACHTUNG: Nach dieser Änderung ist SSH nur noch über Tailscale erreichbar."
 warn "Stelle sicher, dass du mit Tailscale verbunden bist, bevor du fortfährst."
 echo
-read -r -p "Fortfahren? [j/N] " CONFIRM
-[[ "$CONFIRM" =~ ^[jJyY]$ ]] || { echo "Abgebrochen."; exit 0; }
+if [ "$AUTO_YES" = false ]; then
+    read -r -p "Fortfahren? [j/N] " CONFIRM
+    [[ "$CONFIRM" =~ ^[jJyY]$ ]] || { echo "Abgebrochen."; exit 0; }
+fi
 
 # ── Bestehende SSH-Regeln entfernen ──────────────────────────────────────────
 info "Entferne bestehende OpenSSH-Regeln..."
