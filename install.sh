@@ -211,17 +211,12 @@ COMPOSE_PROFILES=""
 case "$ACCESS_CHOICE" in
     1)
         ACCESS_METHOD="tailscale"
-        info "Setting up Tailscale via Docker container..."
-        echo -e "${DIM}The Tailscale container registers on your network and serves Paperless over HTTPS.${NC}"
-        echo -e "${DIM}Get a reusable auth key from: https://login.tailscale.com/admin/settings/keys${NC}"
+        info "Tailscale wird auf dem System installiert..."
+        echo -e "${DIM}Tailscale wird als System-Dienst eingerichtet und stellt Paperless über HTTPS bereit.${NC}"
+        echo -e "${DIM}Reusable Auth Key erstellen unter: https://login.tailscale.com/admin/settings/keys${NC}"
         echo ""
-        ask TS_AUTHKEY "Tailscale auth key (tskey-auth-...)" ""
-        ask TAILSCALE_HOSTNAME "Tailscale machine name" "paperless"
-        if [ -n "$COMPOSE_PROFILES" ]; then
-            COMPOSE_PROFILES="${COMPOSE_PROFILES},tailscale"
-        else
-            COMPOSE_PROFILES="tailscale"
-        fi
+        ask TS_AUTHKEY "Tailscale Auth Key (tskey-auth-...)" ""
+        ask TAILSCALE_HOSTNAME "Tailscale Gerätename" "paperless"
         ;;
     2)
         ACCESS_METHOD="cloudflare"
@@ -232,11 +227,11 @@ case "$ACCESS_CHOICE" in
         ;;
     3)
         ACCESS_METHOD="both"
-        COMPOSE_PROFILES="tunnel,tailscale"
-        info "Setting up Tailscale via Docker container..."
-        echo -e "${DIM}Get a reusable auth key from: https://login.tailscale.com/admin/settings/keys${NC}"
-        ask TS_AUTHKEY "Tailscale auth key (tskey-auth-...)" ""
-        ask TAILSCALE_HOSTNAME "Tailscale machine name" "paperless"
+        COMPOSE_PROFILES="tunnel"
+        info "Tailscale wird auf dem System installiert..."
+        echo -e "${DIM}Reusable Auth Key erstellen unter: https://login.tailscale.com/admin/settings/keys${NC}"
+        ask TS_AUTHKEY "Tailscale Auth Key (tskey-auth-...)" ""
+        ask TAILSCALE_HOSTNAME "Tailscale Gerätename" "paperless"
         ask PAPERLESS_DOMAIN "Your domain for Paperless (e.g. docs.example.com)" ""
         ask CLOUDFLARE_TUNNEL_TOKEN "Cloudflare Tunnel token" ""
         ;;
@@ -619,9 +614,33 @@ install_rclone() {
     esac
 }
 
+install_tailscale() {
+    if [[ "$ACCESS_METHOD" != "tailscale" && "$ACCESS_METHOD" != "both" ]]; then
+        return 0
+    fi
+    if command -v tailscale &>/dev/null; then
+        success "Tailscale bereits installiert: $(tailscale version 2>/dev/null | head -1)"
+        return 0
+    fi
+    case "$OS" in
+        debian|fedora|linux-unknown)
+            info "Installiere Tailscale..."
+            curl -fsSL https://tailscale.com/install.sh | sudo sh
+            success "Tailscale installiert"
+            ;;
+        macos)
+            warn "Tailscale unter macOS bitte manuell installieren: https://tailscale.com/download"
+            ;;
+        nixos)
+            warn "Unter NixOS services.tailscale.enable = true; in configuration.nix setzen und rebuild ausführen."
+            ;;
+    esac
+}
+
 install_docker
 install_packages
 install_rclone
+install_tailscale
 
 # ══════════════════════════════════════════════════════════════
 # PHASE 4: SYSTEM CONFIGURATION (Linux only)
@@ -688,7 +707,7 @@ if [ "$ENABLE_GRAPH" = "true" ]; then
 fi
 
 if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
-    mkdir -p "$INSTALL_DIR"/{tailscale,tailscale-config}
+    mkdir -p "$INSTALL_DIR/tailscale-config"
 fi
 
 # ── Generate secrets ──────────────────────────────────────────
@@ -853,11 +872,11 @@ if [ -d "$REPO_DIR/scripts" ]; then
     chmod +x "$INSTALL_DIR/scripts/"*.sh 2>/dev/null || true
 fi
 
-# ── Copy Tailscale serve config ────────────────────────────────
+# ── Copy Tailscale serve config (für System-Tailscale) ────────
 if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
     if [ -f "$REPO_DIR/templates/tailscale-serve.yml" ]; then
         cp "$REPO_DIR/templates/tailscale-serve.yml" "$INSTALL_DIR/tailscale-config/"
-        success "Tailscale serve config deployed"
+        success "Tailscale serve config gespeichert unter $INSTALL_DIR/tailscale-config/"
     fi
 fi
 
@@ -1286,6 +1305,31 @@ if [ "$HEALTHY" = "true" ]; then
     success "Paperless is healthy!"
 else
     warn "Paperless is still starting. Give it a few more minutes."
+fi
+
+# ── Tailscale System-Einrichtung ──────────────────────────────
+if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
+    step "Konfiguriere Tailscale (System-Dienst)..."
+    if command -v tailscale &>/dev/null; then
+        info "Authentifiziere Tailscale..."
+        sudo tailscale up --authkey="$TS_AUTHKEY" --hostname="$TAILSCALE_HOSTNAME" --accept-routes || \
+            warn "tailscale up fehlgeschlagen. Manuell ausführen: sudo tailscale up --authkey=<KEY> --hostname=$TAILSCALE_HOSTNAME"
+
+        info "Richte Tailscale Serve ein..."
+        sudo tailscale serve --bg https / http://localhost:8000 2>/dev/null || \
+            warn "tailscale serve für Port 443 fehlgeschlagen. Manuell ausführen: sudo tailscale serve --bg https / http://localhost:8000"
+
+        if [[ "$COMPOSE_PROFILES" == *"ai"* ]]; then
+            sudo tailscale serve --bg --https=8443 / http://localhost:8080 2>/dev/null || \
+                warn "tailscale serve für Port 8443 fehlgeschlagen. Manuell ausführen: sudo tailscale serve --bg --https=8443 / http://localhost:8080"
+        fi
+
+        success "Tailscale konfiguriert"
+    else
+        warn "Tailscale nicht gefunden. Nach der Installation manuell ausführen:"
+        warn "  sudo tailscale up --authkey=$TS_AUTHKEY --hostname=$TAILSCALE_HOSTNAME"
+        warn "  sudo tailscale serve --bg https / http://localhost:8000"
+    fi
 fi
 
 # ══════════════════════════════════════════════════════════════
