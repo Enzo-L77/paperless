@@ -501,8 +501,7 @@ fi
 
 # ──────────────────────────────────────────────────────────────
 step "[9/9] Timezone"
-DETECTED_TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||' || echo "UTC")
-ask TIMEZONE "Timezone" "$DETECTED_TZ"
+ask TIMEZONE "Timezone" "Europe/Zurich"
 
 # ══════════════════════════════════════════════════════════════
 # PHASE 3: INSTALL DEPENDENCIES
@@ -1194,15 +1193,15 @@ if [ "$ENABLE_BACKUPS" = "true" ] && [ -n "$RCLONE_REMOTE" ] && [ "$RCLONE_PROVI
             case "$RCLONE_PROVIDER" in
                 drive)
                     echo -e "${DIM}Configuring Google Drive with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" drive scope=drive token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" drive scope drive token "$rclone_token"
                     ;;
                 dropbox)
                     echo -e "${DIM}Configuring Dropbox with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" dropbox token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" dropbox token "$rclone_token"
                     ;;
                 onedrive)
                     echo -e "${DIM}Configuring OneDrive with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" onedrive token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" onedrive token "$rclone_token"
                     ;;
             esac
             success "Cloud backup configured"
