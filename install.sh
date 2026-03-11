@@ -501,8 +501,7 @@ fi
 
 # ──────────────────────────────────────────────────────────────
 step "[9/9] Timezone"
-DETECTED_TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||' || echo "UTC")
-ask TIMEZONE "Timezone" "$DETECTED_TZ"
+ask TIMEZONE "Timezone" "Europe/Zurich"
 
 # ══════════════════════════════════════════════════════════════
 # PHASE 3: INSTALL DEPENDENCIES
