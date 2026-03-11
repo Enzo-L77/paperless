@@ -1193,15 +1193,15 @@ if [ "$ENABLE_BACKUPS" = "true" ] && [ -n "$RCLONE_REMOTE" ] && [ "$RCLONE_PROVI
             case "$RCLONE_PROVIDER" in
                 drive)
                     echo -e "${DIM}Configuring Google Drive with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" drive scope=drive token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" drive scope drive token "$rclone_token"
                     ;;
                 dropbox)
                     echo -e "${DIM}Configuring Dropbox with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" dropbox token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" dropbox token "$rclone_token"
                     ;;
                 onedrive)
                     echo -e "${DIM}Configuring OneDrive with remote auth token...${NC}"
-                    rclone config create "$RCLONE_REMOTE" onedrive token="$rclone_token"
+                    rclone config create "$RCLONE_REMOTE" onedrive token "$rclone_token"
                     ;;
             esac
             success "Cloud backup configured"
