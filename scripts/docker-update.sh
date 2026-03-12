@@ -15,6 +15,19 @@
 
 set -euo pipefail
 
+# ── Healthchecks.io Monitoring ────────────────────────────────────────────────
+HC_URL="https://hc-ping.com/3fd8f0e5-8fd5-4906-9478-06aefcc7320f"
+
+hc_ping() {
+    local suffix="${1:-}"
+    curl -fsS --retry 3 --max-time 10 "${HC_URL}${suffix}" -o /dev/null 2>/dev/null || true
+}
+
+_hc_fail() { hc_ping "/fail"; }
+trap _hc_fail ERR
+
+hc_ping "/start"
+
 # ── Farben (nur im interaktiven Modus) ───────────────────────────────────────
 if [ -t 1 ]; then
     RED='\033[0;31m'
@@ -179,3 +192,5 @@ fi
 echo -e "  ${DIM}Abgeschlossen: $(date '+%Y-%m-%d %H:%M:%S')${NC}"
 echo -e "${CYAN}${BOLD}$(printf '═%.0s' {1..62})${NC}"
 echo ""
+
+hc_ping
