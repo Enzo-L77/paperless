@@ -176,6 +176,45 @@ services:
         limits:
           memory: 3G
 
+  # ── paperless-ai (optional, --profile paperless-ai) ─────
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    container_name: paperless-ai
+    profiles:
+      - paperless-ai
+    environment:
+      PAPERLESS_API_URL: "http://paperless:8000"
+      PAPERLESS_API_TOKEN: "${PAPERLESS_API_TOKEN}"
+      AI_PROVIDER: "${PAPERLESS_AI_PROVIDER}"
+      OPENAI_API_KEY: "${PAPERLESS_AI_OPENAI_API_KEY}"
+      OPENAI_MODEL: "${PAPERLESS_AI_OPENAI_MODEL}"
+      OLLAMA_API_URL: "${PAPERLESS_AI_OLLAMA_URL}"
+      OLLAMA_MODEL: "${PAPERLESS_AI_OLLAMA_MODEL}"
+      SCAN_INTERVAL: "${PAPERLESS_AI_SCAN_INTERVAL:-30}"
+      ADD_AI_PROCESSED_TAG: "${PAPERLESS_AI_ADD_TAG:-true}"
+      AI_PROCESSED_TAG_NAME: "${PAPERLESS_AI_TAG_NAME:-ai-processed}"
+      PROCESS_PREDEFINED_DOCUMENTS: "${PAPERLESS_AI_PROCESS_PREDEFINED:-false}"
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      paperless:
+        condition: service_healthy
+    networks:
+      - paperless-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
   # ── AI Classification (optional, --profile ai) ──────────
   paperless-gpt:
     image: icereed/paperless-gpt:latest
