@@ -1336,9 +1336,11 @@ if [[ "$ACCESS_METHOD" == "tailscale" || "$ACCESS_METHOD" == "both" ]]; then
             if [[ "$ssh_restrict" =~ ^[jJyY] ]]; then
                 FIREWALL_SCRIPT="$INSTALL_DIR/scripts/firewall-tailscale-ssh.sh"
                 if [ -f "$FIREWALL_SCRIPT" ]; then
-                    sudo bash "$FIREWALL_SCRIPT" --yes && \
-                        success "SSH ist jetzt nur noch über Tailscale erreichbar." || \
+                    if sudo bash "$FIREWALL_SCRIPT" --yes; then
+                        success "SSH ist jetzt nur noch über Tailscale erreichbar."
+                    else
                         warn "Firewall-Skript fehlgeschlagen. Manuell ausführen: sudo bash $FIREWALL_SCRIPT"
+                    fi
                 else
                     warn "Skript nicht gefunden: $FIREWALL_SCRIPT"
                 fi
