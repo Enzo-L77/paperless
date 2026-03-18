@@ -699,7 +699,7 @@ fi
 
 step "Creating installation at $INSTALL_DIR..."
 
-mkdir -p "$INSTALL_DIR"/{data,media,export,consume,redis,db,prompts,scripts,backups}
+mkdir -p "$INSTALL_DIR"/{data,media,export,consume,redis,db,prompts,scripts,backups,logs}
 
 if [ "$ENABLE_GRAPH" = "true" ]; then
     mkdir -p "$INSTALL_DIR"/neo4j/{data,logs}
