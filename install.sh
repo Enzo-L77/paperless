@@ -1275,6 +1275,22 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════
+# PHASE 8d: SET UP LOGROTATE FOR PAPERLESS LOGS
+# ══════════════════════════════════════════════════════════════
+
+step "Setting up logrotate for backup.log and docker-update.log..."
+
+if command -v logrotate &>/dev/null; then
+    LOGROTATE_CONF="/etc/logrotate.d/paperless"
+    sed "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
+        "$REPO_DIR/templates/logrotate-paperless.conf" \
+        | sudo tee "$LOGROTATE_CONF" >/dev/null
+    success "logrotate configured: $LOGROTATE_CONF (monthly, 2 months retention)"
+else
+    warn "logrotate not found — skipping log rotation setup"
+fi
+
+# ══════════════════════════════════════════════════════════════
 # PHASE 9: START THE STACK
 # ══════════════════════════════════════════════════════════════
 
