@@ -699,7 +699,7 @@ fi
 
 step "Creating installation at $INSTALL_DIR..."
 
-mkdir -p "$INSTALL_DIR"/{data,media,export,consume,redis,db,prompts,scripts,backups}
+mkdir -p "$INSTALL_DIR"/{data,media,export,consume,redis,db,prompts,scripts,backups,logs}
 
 if [ "$ENABLE_GRAPH" = "true" ]; then
     mkdir -p "$INSTALL_DIR"/neo4j/{data,logs}
@@ -1272,6 +1272,22 @@ if crontab -l 2>/dev/null | grep -qF "docker-update.sh"; then
 else
     (crontab -l 2>/dev/null; echo "$UPDATE_CRON") | crontab -
     success "Docker auto-update scheduled: daily at 4:00 AM"
+fi
+
+# ══════════════════════════════════════════════════════════════
+# PHASE 8d: SET UP LOGROTATE FOR PAPERLESS LOGS
+# ══════════════════════════════════════════════════════════════
+
+step "Setting up logrotate for backup.log and docker-update.log..."
+
+if command -v logrotate &>/dev/null; then
+    LOGROTATE_CONF="/etc/logrotate.d/paperless"
+    sed "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
+        "$REPO_DIR/templates/logrotate-paperless.conf" \
+        | sudo tee "$LOGROTATE_CONF" >/dev/null
+    success "logrotate configured: $LOGROTATE_CONF (monthly, 2 months retention)"
+else
+    warn "logrotate not found — skipping log rotation setup"
 fi
 
 # ══════════════════════════════════════════════════════════════
